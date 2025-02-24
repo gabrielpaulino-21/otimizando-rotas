@@ -1,171 +1,169 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
-# C extensions
-*.so
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+from time import sleep
+import pulp
+import itertools
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service)
+driver.implicitly_wait(2)
+driver.get("https://www.google.com/maps")
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
 
-# Translations
-*.mo
-*.pot
+def esta_na_aba_de_rotas():
+    xpath = '//button[@aria-label="Fechar rotas"]'
+    botao_rotas = driver.find_elements(By.XPATH, xpath)
+    return len(botao_rotas) > 0
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+def adiciona_destino(endereco, num_caixa=1):
+    if not esta_na_aba_de_rotas():
+        barra_vazia = driver.find_element(By.ID, 'searchboxinput')
+        barra_vazia.clear()
+        barra_vazia.send_keys(endereco)
+        barra_vazia.send_keys(Keys.RETURN)
+    else:
+        xpath = '//div[contains(@id, "directions-searchbox")]//input'
+        caixas = driver.find_elements(By.XPATH, xpath)
+        caixas = [c for c in caixas if c.is_displayed()]
+        if len(caixas) >= num_caixa:
+            caixa_endereco = caixas[num_caixa-1]
+            caixa_endereco.send_keys(Keys.CONTROL + 'a')
+            caixa_endereco.send_keys(Keys.DELETE)
+            caixa_endereco.send_keys(endereco)
+            caixa_endereco.send_keys(Keys.RETURN)
+        else:
+            print(f'Não conseguimos adicionar o endereço {len(caixas)} | {num_caixa}')
 
-# Flask stuff:
-instance/
-.webassets-cache
+def abre_rotas():
+    xpath = '//button[@data-value="Rotas"]'
+    wait = WebDriverWait(driver, timeout=5)
+    botao_rotas = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+    botao_rotas.click()
 
-# Scrapy stuff:
-.scrapy
+    xpath = '//button[@aria-label="Fechar rotas"]'
+    wait = WebDriverWait(driver, timeout=5)
+    botao_rotas = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
 
-# Sphinx documentation
-docs/_build/
+def adiciona_caixa_destino():
+    xpath = '//span[text()="Adicionar destino"]'
+    wait = WebDriverWait(driver, timeout=3)
+    wait.until(EC.visibility_of_element_located((By.XPATH, xpath)))
 
-# PyBuilder
-.pybuilder/
-target/
+    botao_adiciona_destino = driver.find_element(By.XPATH, xpath)
+    botao_adiciona_destino.click()
 
-# Jupyter Notebook
-.ipynb_checkpoints
+def seleciona_tipo_conducao(tipo_conducao="Carro"):
+    xpath = f'//img[@aria-label="{tipo_conducao}"]'
+    wait = WebDriverWait(driver, timeout=3)
+    botao_conducao = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+    botao_conducao.click()
 
-# IPython
-profile_default/
-ipython_config.py
+def retorna_tempo_total():
+    xpath = '//div[@id="section-directions-trip-0"]//div[contains(text(),"min")]'
+    wait = WebDriverWait(driver, timeout=3)
+    elemento_tempo = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+    return int(elemento_tempo.text.replace(' min', ''))
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+def retorna_ditancia_total():
+    xpath = '//div[@id="section-directions-trip-0"]//div[contains(text(),"km")]'
+    wait = WebDriverWait(driver, timeout=3)
+    elemento_tempo = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+    return float(elemento_tempo.text.replace(' km', '').replace(',', '.'))
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+# ==================== FUNÇÕES PRINCIPAIS ====================
 
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
+def gera_pares_distancia(enderecos):
 
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
+    distancia_pares = {}
+    driver.get("https://www.google.com/maps")
+    adiciona_destino(enderecos[0], 1)
+    abre_rotas()
+    seleciona_tipo_conducao(tipo_conducao="Carro")
 
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#pdm.lock
-#   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
-#   in version control.
-#   https://pdm.fming.dev/latest/usage/project/#working-with-version-control
-.pdm.toml
-.pdm-python
-.pdm-build/
+    for i, end1 in enumerate(enderecos):
+        adiciona_destino(end1, 1)
+        for j, end2 in enumerate(enderecos):
+            if i != j:
+                adiciona_destino(end2, 2)
+                tempo_par = retorna_tempo_total()
+                distancia_pares[f'{i}_{j}'] = tempo_par
+    
+    return distancia_pares
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
+def gera_otimizacao(enderecos, distancia_pares):
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
+    def distancia(end1, end2):
+        return distancia_pares[f'{end1}_{end2}']
+    
+    prob = pulp.LpProblem('TSP', pulp.LpMinimize)
 
-# SageMath parsed files
-*.sage.py
+    x = pulp.LpVariable.dicts('x', [(i, j) for i in range(len(enderecos)) for j in range(len(enderecos)) if i != j], cat='Binary')
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+    prob += pulp.lpSum([distancia(i, j) * x[(i, j)] for i in range(len(enderecos)) for j in range(len(enderecos)) if i != j])
 
-# Spyder project settings
-.spyderproject
-.spyproject
+    for i in range(len(enderecos)):
+        prob += pulp.lpSum([x[(i, j)] for j in range(len(enderecos)) if i != j]) == 1
+        prob += pulp.lpSum([x[(j, i)] for j in range(len(enderecos)) if i != j]) == 1
+ 
+    for k in range(len(enderecos)):
+        for S in range(2, len(enderecos)):
+            for subset in itertools.combinations([i for i in range(len(enderecos)) if i != k], S):
+                prob += pulp.lpSum([x[(i, j)] for i in subset for j in subset if i != j]) <= len(subset) - 1
+    
+    prob.solve(pulp.PULP_CBC_CMD())
 
-# Rope project settings
-.ropeproject
+    solucao = []
+    cidade_inicial = 0
+    proxima_cidade = cidade_inicial
+    while True:
+        for j in range(len(enderecos)):
+            if j != proxima_cidade and x[(proxima_cidade, j)].value() == 1:
+               solucao.append((proxima_cidade, j))
+               proxima_cidade = j
+               break
+        if proxima_cidade == cidade_inicial:
+            break
+    
+    print('Rota:')
+    for i in range(len(solucao)):
+        print(solucao[i][0], ' ->> ', solucao[i][1])
+    
+    return solucao
 
-# mkdocs documentation
-/site
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+def mostra_rota_otimizada(enderecos, solucao):
+    driver.get("https://www.google.com/maps")
 
-# Pyre type checker
-.pyre/
+    adiciona_destino(enderecos[0], 1)
+    abre_rotas()
 
-# pytype static type analyzer
-.pytype/
+    for i in range(len(solucao)):
+        adiciona_destino(enderecos[solucao[i][0]], i+1)
+        adiciona_caixa_destino()
+    
+    adiciona_destino(enderecos[0], len(enderecos) + 1)
 
-# Cython debug symbols
-cython_debug/
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+if __name__ == '__main__':
 
-# PyPI configuration file
-.pypirc
+    enderecos = [
+                "Rua da Cantareira, 306 - Centro Histórico de São Paulo, São Paulo - SP, 01024-000",  #Mercadão de São Paulo
+                "Praça da Sé, s/n - Sé, São Paulo - SP, 01001-000",  #Catedral da Sé
+                "Av. Paulista, 1578 - Bela Vista, São Paulo - SP, 01310-200", #Avenida Paulista - Masp
+                "Praça da Luz, 1 - Luz, São Paulo - SP, 01120-010", # Estação da Luz
+                ]
+    
+    distancia_pares = gera_pares_distancia(enderecos)
+    solucao = gera_otimizacao(enderecos, distancia_pares)
+    mostra_rota_otimizada(enderecos, solucao)
+
+
+    sleep(600)
