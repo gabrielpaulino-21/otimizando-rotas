@@ -1,5 +1,4 @@
-# otimizando-rotas
-Automatizando rotas com Google Maps com Python
+# Automatizando rotas com Google Maps com Python
 
 Este projeto visa otimizar o trajeto entre pontos turísticos importantes de São Paulo, utilizando Selenium (para automação de navegação) e Google Maps (para cálculo de rotas e distâncias). O objetivo principal é calcular a rota mais eficiente entre diferentes pontos, considerando o tempo de viagem e a distância. O foco é facilitar a visualização do melhor caminho para turistas ou planejadores de rotas.
 
